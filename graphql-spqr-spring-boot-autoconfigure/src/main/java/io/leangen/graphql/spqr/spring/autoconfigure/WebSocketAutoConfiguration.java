@@ -18,6 +18,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
+import org.springframework.web.socket.server.HandshakeInterceptor;
 
 import java.util.Optional;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -50,6 +51,7 @@ public class WebSocketAutoConfiguration implements WebSocketConfigurer {
         String endpointUrl = webSocketEndpoint == null ? graphQLEndpoint : webSocketEndpoint;
         webSocketHandlerRegistry
                 .addHandler(webSocketHandler(webSocketExecutor(webSocketContextFactory())), endpointUrl)
+                .addInterceptors(handshakeInterceptorsFactory().getInterceptors())
                 .setAllowedOrigins(config.getWs().getAllowedOrigins());
     }
 
@@ -72,6 +74,12 @@ public class WebSocketAutoConfiguration implements WebSocketConfigurer {
         int keepAliveInterval = config.getWs().getKeepAlive().getIntervalMillis();
         return new PerConnectionApolloHandler(graphQL, executor,
                 keepAliveEnabled ? defaultTaskScheduler() : null, keepAliveInterval);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public HandshakeInterceptorsFactory handshakeInterceptorsFactory() {
+        return () -> new HandshakeInterceptor[0];
     }
 
     private TaskScheduler defaultTaskScheduler() {
